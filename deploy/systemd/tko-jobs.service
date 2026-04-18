@@ -1,0 +1,13 @@
+[Unit]
+Description=TKOS RAG Platform - Background Jobs
+After=network.target postgresql.service redis.service tko-web.service
+Wants=postgresql.service redis.service
+
+[Service]
+Type=oneshot
+User=tkos
+Group=tkos
+WorkingDirectory=/opt/tkos
+EnvironmentFile=/opt/tkos/.env
+ExecStart=/opt/tkos/.venv/bin/python manage.py run_jobs --loop --max-jobs 500 --poll-interval 10
+TimeoutStartSec=3600

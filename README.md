@@ -49,8 +49,8 @@ The system is organized into 20 Django apps, each responsible for a distinct dom
 ```
 apps/
   core/              # Base models (TimeStampedModel), enums, middleware, vector field
-  accounts/          # User accounts and authentication
-  chat_events/       # Telegram sources, messages, webhook handling, Celery tasks
+  accounts/          # User accounts, RBAC (Role, ScopePermission, ApprovalPolicy)
+  chat_events/       # Telegram sources, messages, outbound delivery with retry tracking
   domains_projects/  # Domain > Project hierarchy with aliases and relations
   threads/           # Conversation thread reconstruction
   contacts/          # Contact management
@@ -63,11 +63,11 @@ apps/
                      #   diagnostics, evaluation, redaction, review queue
   prompts/           # Prompt templates with versioning
   archive_ingest/    # Telegram JSON export import
-  secrets/           # Encrypted secret storage with Fernet broker
+  secrets/           # Encrypted secret storage, approval service with expiry/revocation
   artifacts/         # File attachments in MinIO/S3
-  jobs/              # Background job queue management
-  webui/             # Web dashboard (Django templates)
-  exports/           # Data export functionality
+  jobs/              # Background job queue with retry, idempotency, dead-letter
+  webui/             # Web dashboard with RBAC permission mixins
+  exports/           # Data export, backup/restore service
   llm/               # LLM client (OpenAI-compatible)
   health/            # Health check endpoints
   api/               # REST API (DRF viewsets + search)
@@ -95,6 +95,23 @@ RagCorpusEntry (unified RAG-eligible corpus with trust/freshness/reviewed scorin
 RetrievalSession (full RAG provenance for every LLM response)
 RetrievalEvaluationCase/Run/Result (systematic retrieval quality measurement)
 ReviewQueueItem (human-in-the-loop outlier review)
+
+--- RBAC & Access Control (P2.1) ---
+Role (7 system roles: super_admin, operator, reviewer, analyst, viewer, bot_admin, security_admin)
+UserRoleBinding (user-role mapping with audit trail)
+ScopePermission (action + resource_type + scope_type for fine-grained access)
+ApprovalPolicy (scope-based approval workflows)
+
+--- Job System (P2.1) ---
+JobQueue (7 statuses: queued/running/done/failed/retry/dead_letter/cancelled)
+  - idempotency_key (dedup), attempt_count, max_attempts
+  - last_heartbeat_at, worker_name, trace_id (observability)
+
+--- Delivery Tracking (P2.1) ---
+OutboundDeliveryAttempt (per-attempt delivery tracking with rate-limit handling)
+
+--- Backup/Restore (P2.1) ---
+Backup bundle: PostgreSQL dump + wiki + context packs + agent profiles + eval data + manifest
 ```
 
 ### RAG Pipeline
@@ -293,10 +310,22 @@ The REST API is available at `/api/` with token authentication.
 | `create_source_eval_pack <slug>` | Bootstrap evaluation data per source |
 | `build_review_queue` | Populate operator review queue |
 
+### P2.1 Operational Commands
+
+| Command | Description |
+|---------|-------------|
+| `seed_roles` | Create 7 default RBAC roles with scoped permissions |
+| `run_jobs` | Poll and execute pending jobs (loop mode available) |
+| `requeue_failed_jobs` | Requeue dead-lettered jobs for retry |
+| `create_backup_bundle` | Create full system backup (DB + wiki + packs + profiles) |
+| `verify_backup_bundle <path>` | Verify backup bundle integrity |
+
 ---
 
 ## Security
 
+- **RBAC**: 7 system roles (super_admin, operator, reviewer, analyst, viewer, bot_admin, security_admin) with fine-grained scoped permissions
+- **Approval Policies**: Scope-based approval workflows for secrets and sensitive operations
 - **Authentication**: All Web UI and API endpoints require authentication (session + token)
 - **Rate Limiting**: Telegram webhook is rate-limited (60 req/min per IP)
 - **Webhook Verification**: Timing-attack-safe secret comparison via `hmac.compare_digest()`
@@ -307,6 +336,9 @@ The REST API is available at `/api/` with token authentication.
 - **CSRF Protection**: Enabled on all browser-facing views
 - **Soft Delete**: Data is never hard-deleted, only marked as `is_deleted`
 - **Production Hardening**: HSTS, XSS filter, content-type nosniff, X-Frame DENY, secure cookies
+- **Backup/Restore**: Full system backup with integrity verification and documented restore flow
+- **Job Resilience**: Idempotency keys, exponential backoff retry, dead-letter queue, heartbeat monitoring
+- **Delivery Tracking**: Per-attempt outbound delivery logs with rate-limit backoff handling
 
 ---
 
@@ -319,9 +351,12 @@ RAG_for_AI/
   apps/                  # Django applications (20 apps)
   config/                # Django settings (base/dev/prod), Celery, URLs
   requirements/          # Python dependencies (base/dev/prod)
-  scripts/               # Shell scripts (bootstrap)
+  scripts/               # Shell scripts (backup.sh, restore.sh, bootstrap_debian.sh)
+  deploy/                # Deployment: systemd services, nginx config
+  docs/                  # Documentation: deployment, runbook, release checklist
   static/                # Static files (CSS)
   templates/             # Django templates (Web UI)
+  tests/                 # E2E smoke tests
   docker-compose.yml     # Full stack: PostgreSQL + Redis + MinIO + Django + Celery
   Dockerfile             # Multi-stage production image (non-root user)
   Makefile               # Common development commands
@@ -351,7 +386,7 @@ make superuser     # Create admin user
 
 ## Roadmap
 
-### Completed (P0 - P2.0 Prep)
+### Completed (P0 - P2.1)
 
 - [x] P0: Core data model with hierarchical knowledge structure
 - [x] P0: Telegram webhook with multi-bot source support
@@ -370,11 +405,19 @@ make superuser     # Create admin user
 - [x] P2.0 Prep: Corpus compaction and lifecycle management
 - [x] P2.0 Prep: Reranker abstraction (pluggable)
 - [x] P2.0 Prep: Redaction-aware retrieval filtering
+- [x] P2.1: RBAC with 7 roles, scoped permissions, approval policies
+- [x] P2.1: Job queue with idempotency, retry, dead-letter, heartbeat
+- [x] P2.1: Telegram outbound delivery with per-attempt tracking and rate-limit handling
+- [x] P2.1: Backup/restore service (DB dump + wiki + context packs + profiles + eval)
+- [x] P2.1: Secret approval with expiry, revocation, and audit trail
+- [x] P2.1: Production deployment (systemd + nginx + Debian 13 guide)
+- [x] P2.1: E2E smoke tests (RBAC, job lifecycle, delivery)
+- [x] P2.1: Operational runbook and release checklist
 - [x] Security: Timing-safe webhook verification, production hardening headers
 - [x] Infrastructure: Multi-stage Dockerfile (non-root), task time limits
 - [x] Context assembly: Token budget management with configurable truncation
 
-### Planned (P2.0+)
+### Planned (P2.2+)
 
 - [ ] LLM-based knowledge extraction from threads
 - [ ] Automatic wiki page generation and updates

@@ -57,6 +57,37 @@ class OutboundDeliveryLog(TimeStampedModel):
     error_text = models.TextField(blank=True)
 
 
+class OutboundDeliveryAttempt(TimeStampedModel):
+    """P2.1: Tracks individual delivery attempts to Telegram API with retry metadata."""
+
+    class DeliveryStatus(models.TextChoices):
+        PENDING = "pending", "Pending"
+        SENT = "sent", "Sent"
+        FAILED = "failed", "Failed"
+        RATE_LIMITED = "rate_limited", "Rate Limited"
+
+    delivery_log = models.ForeignKey(
+        OutboundDeliveryLog, on_delete=models.CASCADE, related_name="attempts"
+    )
+    delivery_status = models.CharField(
+        max_length=32, choices=DeliveryStatus.choices, default=DeliveryStatus.PENDING
+    )
+    attempt_number = models.IntegerField(default=1)
+    telegram_response_payload = models.JSONField(default=dict, blank=True,
+                                                   help_text="Raw Telegram API response")
+    last_error_code = models.CharField(max_length=64, blank=True,
+                                        help_text="Telegram error code (e.g. 429, 403)")
+    retry_after = models.IntegerField(default=0, help_text="Telegram rate-limit backoff seconds")
+    response_message_id = models.CharField(max_length=64, blank=True)
+
+    class Meta:
+        db_table = "chat_events_outbound_delivery_attempt"
+        ordering = ["attempt_number"]
+
+    def __str__(self):
+        return f"Attempt #{self.attempt_number} for delivery {self.delivery_log_id} [{self.delivery_status}]"
+
+
 class Message(TimeStampedModel):
     class SenderType(models.TextChoices):
         OWNER = "owner", "Owner"

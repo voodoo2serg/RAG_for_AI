@@ -1,0 +1,24 @@
+[Unit]
+Description=TKOS RAG Platform - Web Service
+After=network.target postgresql.service redis.service
+Wants=postgresql.service redis.service
+
+[Service]
+Type=notify
+User=tkos
+Group=tkos
+WorkingDirectory=/opt/tkos
+EnvironmentFile=/opt/tkos/.env
+ExecStart=/opt/tkos/.venv/bin/gunicorn config.wsgi:application \
+    --bind 127.0.0.1:8000 \
+    --workers 4 \
+    --timeout 120 \
+    --access-logfile /var/log/tkos/access.log \
+    --error-logfile /var/log/tkos/error.log
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
