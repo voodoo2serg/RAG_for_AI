@@ -22,7 +22,11 @@ def telegram_webhook(request: HttpRequest, source_slug: str):
     if not source.is_inbound_enabled:
         return JsonResponse({"ok": False, "error": "source inbound disabled"}, status=403)
 
-    payload = json.loads(request.body.decode("utf-8"))
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({"ok": False, "error": "invalid JSON payload"}, status=400)
+
     secret_header = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
     if source.webhook_secret and not hmac.compare_digest(source.webhook_secret, secret_header):
         logger.warning("Webhook auth failed for source=%s request_id=%s", source_slug, getattr(request, "request_id", "-"))

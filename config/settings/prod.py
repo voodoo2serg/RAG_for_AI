@@ -5,12 +5,12 @@ ENVIRONMENT = "production"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ["POSTGRES_DB"],
-        "USER": os.environ["POSTGRES_USER"],
-        "PASSWORD": os.environ["POSTGRES_PASSWORD"],
-        "HOST": os.environ.get("POSTGRES_HOST", "127.0.0.1"),
-        "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+        "ENGINE": os.environ.get("DB_ENGINE", "django.db.backends.postgresql"),
+        "NAME": os.environ.get("POSTGRES_DB", os.environ.get("DB_NAME", "tkos")),
+        "USER": os.environ.get("POSTGRES_USER", os.environ.get("DB_USER", "tkos")),
+        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", os.environ.get("DB_PASSWORD", "tkos")),
+        "HOST": os.environ.get("POSTGRES_HOST", os.environ.get("DB_HOST", "127.0.0.1")),
+        "PORT": os.environ.get("POSTGRES_PORT", os.environ.get("DB_PORT", "5432")),
     }
 }
 
@@ -23,6 +23,15 @@ CSRF_COOKIE_SECURE = True
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
+
+# Production CORS configuration
+CORS_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+if not CORS_ALLOWED_ORIGINS:
+    CORS_ALLOW_ALL_ORIGINS = True  # Backward-compatible default; restrict in production
 
 # Production file logging
 LOGGING["handlers"]["file"] = {

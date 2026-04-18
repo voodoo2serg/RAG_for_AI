@@ -54,6 +54,9 @@ def revoke_role(user: User, role_name: str) -> bool:
     return deleted_count > 0
 
 
+from django.db import models as db_models
+
+
 def check_permission(
     user: User,
     action: str,
@@ -82,19 +85,15 @@ def check_permission(
 
     qs = ScopePermission.objects.filter(role_id__in=role_ids, action=action, is_deleted=False)
     if resource_type:
-        qs = qs.filter(models.Q(resource_type=resource_type) | models.Q(resource_type="*"))
+        qs = qs.filter(db_models.Q(resource_type=resource_type) | db_models.Q(resource_type="*"))
     if scope_type:
-        qs = qs.filter(models.Q(scope_type=scope_type) | models.Q(scope_type="global"))
+        qs = qs.filter(db_models.Q(scope_type=scope_type) | db_models.Q(scope_type="global"))
     if resource_id is not None:
-        qs = qs.filter(models.Q(resource_id=resource_id) | models.Q(resource_id__isnull=True))
+        qs = qs.filter(db_models.Q(resource_id=resource_id) | db_models.Q(resource_id__isnull=True))
     else:
         qs = qs.filter(resource_id__isnull=True)
 
     return qs.exists()
-
-
-# Import models.Q lazily to avoid circular import at module level
-from django.db import models  # noqa: E402
 
 
 def require_role(role_names: List[str]):
@@ -104,14 +103,14 @@ def require_role(role_names: List[str]):
         @require_role(['operator', 'super_admin'])
         def my_view(request):
             ...
-    Returns 403 if user lacks all required roles.
+    Returns 401 if not authenticated, 403 if user lacks all required roles.
     """
     def decorator(view_func):
         @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
             if not request.user.is_authenticated:
-                from django.contrib.auth.decorators import login_required
-                return login_required(lambda r: None)(request)
+                from django.http import JsonResponse
+                return JsonResponse({"error": "Authentication required"}, status=401)
             if not any(has_role(request.user, rn) for rn in role_names):
                 from django.http import HttpResponseForbidden
                 return HttpResponseForbidden("Insufficient permissions")

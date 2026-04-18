@@ -17,5 +17,10 @@ class SecretAccessLog(TimeStampedModel):
     agent_profile_id = models.BigIntegerField(null=True, blank=True)
     actor_type = models.CharField(max_length=32)
     actor_id = models.BigIntegerField(null=True, blank=True)
-    access_mode = models.CharField(max_length=32)
+    access_mode = models.CharField(max_length=32, default="read")
     reason = models.TextField(blank=True)
+    # P2.1: Approval & expiry fields
+    expires_at = models.DateTimeField(null=True, blank=True, help_text="Grant expiry time")
+    revoked_at = models.DateTimeField(null=True, blank=True, help_text="When grant was revoked")
+    revoke_reason = models.TextField(blank=True, help_text="Reason for revocation")
+    granted_by_id = models.BigIntegerField(null=True, blank=True, help_text="User who granted access")

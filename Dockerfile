@@ -18,7 +18,7 @@ RUN pip install --no-cache-dir --user -r requirements/prod.txt
 # Stage 2: Runtime image (no build tools)
 FROM python:3.12-slim AS runtime
 
-ENV PYTHONDONTWRITEBYTEBYTECODE=1
+ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
@@ -31,7 +31,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /root/.local /home/appuser/.local
 COPY . .
 
-RUN python manage.py collectstatic --noinput 2>/dev/null || true && \
+RUN mkdir -p /app/logs && \
+    python manage.py collectstatic --noinput 2>/dev/null || true && \
     chown -R appuser:appuser /app
 
 ENV PATH=/home/appuser/.local/bin:$PATH

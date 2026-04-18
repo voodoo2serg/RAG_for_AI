@@ -89,7 +89,7 @@ class SearchView(generics.GenericAPIView):
         project_id = request.query_params.get("project_id")
         domain_id = request.query_params.get("domain_id")
         try:
-            limit = min(int(request.query_params.get("limit", 20)), 100)
+            limit = max(1, min(int(request.query_params.get("limit", 20)), 100))
         except (ValueError, TypeError):
             limit = 20
 
@@ -97,21 +97,20 @@ class SearchView(generics.GenericAPIView):
             return Response({"error": "Query parameter 'q' is required"}, status=status.HTTP_400_BAD_REQUEST)
 
         engine = get_search_engine()
-        msg_results = engine.search_messages(
+        results = engine.search_corpus(
             query,
             project_id=int(project_id) if project_id else None,
             domain_id=int(domain_id) if domain_id else None,
             limit=limit,
         )
-        ki_results = engine.search_knowledge(
-            query,
-            project_id=int(project_id) if project_id else None,
-            limit=10,
-        )
+
+        # Separate results by entry type for backward-compatible response
+        messages = [r.obj for r in results if r.obj.entry_type == "message" and hasattr(r.obj, "source")]
+        knowledge = [r.obj for r in results if r.obj.entry_type == "knowledge"]
 
         return Response({
             "query": query,
-            "messages": MessageSerializer([r.obj for r in msg_results], many=True).data,
-            "knowledge": KnowledgeItemSerializer([r.obj for r in ki_results], many=True).data,
-            "total": len(msg_results) + len(ki_results),
+            "messages": MessageSerializer(messages, many=True).data,
+            "knowledge": KnowledgeItemSerializer(knowledge, many=True).data,
+            "total": len(results),
         })

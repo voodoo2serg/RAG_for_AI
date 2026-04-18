@@ -18,6 +18,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.postgres",
+    "pgvector",
     "corsheaders",
     "rest_framework",
     "rest_framework.authtoken",

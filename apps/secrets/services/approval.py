@@ -72,18 +72,19 @@ def revoke_grant(access_log: SecretAccessLog, reason: str = "") -> bool:
 def is_access_granted(secret_record: SecretRecord, actor_type: str, actor_id: Optional[int] = None) -> bool:
     """Check if there is an active (non-expired, non-revoked) grant for the actor."""
     now = django_tz.now()
-    return SecretAccessLog.objects.filter(
+    # Time-bounded grants: must not be expired and must not be revoked
+    time_bounded = SecretAccessLog.objects.filter(
         secret_record=secret_record,
         actor_type=actor_type,
         actor_id=actor_id,
         access_mode="grant",
         is_deleted=False,
         revoked_at__isnull=True,
-    ).filter(
-        expires_at__isnull=True
-    ).filter(
-        expires_at__gt=now
-    ).exists() or SecretAccessLog.objects.filter(
+        expires_at__isnull=False,
+        expires_at__gt=now,
+    ).exists()
+    # Permanent grants: no expiry set, not revoked
+    permanent = SecretAccessLog.objects.filter(
         secret_record=secret_record,
         actor_type=actor_type,
         actor_id=actor_id,
@@ -92,6 +93,7 @@ def is_access_granted(secret_record: SecretRecord, actor_type: str, actor_id: Op
         revoked_at__isnull=True,
         expires_at__isnull=True,
     ).exists()
+    return time_bounded or permanent
 
 
 def log_access(secret_record: SecretRecord, actor_type: str, actor_id: Optional[int] = None,

@@ -1,6 +1,7 @@
 """Job execution service with heartbeat, trace_id, and idempotency support."""
 
 import logging
+import os
 import socket
 import time
 from datetime import datetime, timezone
@@ -12,7 +13,7 @@ from apps.jobs.models import JobQueue
 logger = logging.getLogger(__name__)
 
 # Machine identifier for worker_name
-_WORKER_NAME = f"{socket.gethostname()}-{id(object())}"
+_WORKER_NAME = f"{socket.gethostname()}-{os.getpid()}"
 
 
 def enqueue_job(
@@ -49,7 +50,11 @@ def enqueue_job(
 
 
 def claim_next_job(job_type: Optional[str] = None) -> Optional[JobQueue]:
-    """Atomically claim the next available job for execution."""
+    """Atomically claim the next available job for execution.
+
+    Uses select_for_update(skip_locked=True) to prevent race conditions
+    when multiple workers try to claim the same job simultaneously.
+    """
     qs = JobQueue.objects.filter(
         status__in=[JobQueue.Status.QUEUED, JobQueue.Status.RETRY],
         available_at__lte=django_tz.now(),
@@ -57,7 +62,7 @@ def claim_next_job(job_type: Optional[str] = None) -> Optional[JobQueue]:
     )
     if job_type:
         qs = qs.filter(job_type=job_type)
-    job = qs.order_by("-priority", "available_at").first()
+    job = qs.select_for_update(skip_locked=True).order_by("-priority", "available_at").first()
     if not job:
         return None
     job.status = JobQueue.Status.RUNNING
