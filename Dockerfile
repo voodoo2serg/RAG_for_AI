@@ -29,6 +29,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     groupadd -r appuser && useradd -r -g appuser -d /app appuser
 
 COPY --from=builder /root/.local /home/appuser/.local
+
+# Cache bust - force rebuild when settings change
+ARG CACHE_BUST=2
+COPY config/settings/ config/settings/
 COPY . .
 
 RUN mkdir -p /app/logs && \
