@@ -7,7 +7,8 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
 from django_ratelimit.decorators import ratelimit
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from .models import TelegramSource, Message
 from .serializers import TelegramSourceSerializer
@@ -86,6 +87,7 @@ def telegram_webhook(request: HttpRequest, source_slug: str):
 
 
 @api_view(["GET"])
+@permission_classes([AllowAny])
 def telegram_sources_list(request):
     """List all active Telegram sources for import widget"""
     sources = TelegramSource.objects.filter(is_active=True).order_by("display_name")
