@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Import - Universal Upload Widget</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            color: #58a6ff;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #8b949e;
+        }
+        
+        .source-selector {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .source-selector label {
+            display: block;
+            margin-bottom: 12px;
+            color: #8b949e;
+            font-size: 0.95em;
+        }
+        
+        .source-selector select {
+            width: 100%;
+            padding: 12px 16px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            color: #c9d1d9;
+            font-size: 1em;
+        }
+        
+        .upload-section {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .upload-section h2 {
+            margin-bottom: 20px;
+            color: #58a6ff;
+            font-size: 1.3em;
+        }
+        
+        .batches-section {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 24px;
+        }
+        
+        .batches-section h2 {
+            margin-bottom: 20px;
+            color: #58a6ff;
+            font-size: 1.3em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📥 RAG Import Widget</h1>
+            <p class="subtitle">Универсальный компонент загрузки файлов</p>
+        </header>
+        
+        <!-- Source Selection -->
+        <div class="source-selector">
+            <label for="source">Telegram Source:</label>
+            <select id="source">
+                <option value="">-- Выберите source --</option>
+            </select>
+        </div>
+        
+        <!-- Upload Widget -->
+        <div class="upload-section">
+            <h2>Загрузка файлов</h2>
+            <div id="upload-widget"></div>
+        </div>
+        
+        <!-- Batches List -->
+        <div class="batches-section">
+            <h2>История загрузок</h2>
+            <div id="batches-list">Загрузка...</div>
+        </div>
+    </div>
+
+    <!-- Include the File Upload Widget -->
+    <script src="/static/js/file-upload-widget/file-upload-widget.js"></script>
+    
+    <script>
+        const API_URL = '/api';
+        let uploader = null;
+        
+        // Load sources
+        async function loadSources() {
+            try {
+                const response = await fetch(`${API_URL}/telegram-sources/`);
+                if (response.ok) {
+                    const sources = await response.json();
+                    const select = document.getElementById('source');
+                    select.innerHTML = '<option value="">-- Выберите source --</option>' +
+                        sources.map(s => `<option value="${s.slug}">${s.name} (${s.slug})</option>`).join('');
+                }
+            } catch (e) {
+                console.error('Failed to load sources:', e);
+            }
+        }
+        
+        // Initialize widget
+        function initWidget() {
+            const sourceSelect = document.getElementById('source');
+            
+            uploader = new FileUploadWidget({
+                container: '#upload-widget',
+                uploadUrl: `${API_URL}/import-jobs/upload/`,
+                accept: '.json',
+                maxFileSize: 100 * 1024 * 1024, // 100MB
+                parallel: 3,
+                retryAttempts: 3,
+                formData: {
+                    source_slug: sourceSelect.value
+                },
+                onSelect: (files) => {
+                    console.log('Selected:', files.length, 'files');
+                },
+                onProgress: (file, percent) => {
+                    console.log(file.name, percent + '%');
+                },
+                onComplete: (files) => {
+                    console.log('All done:', files);
+                    loadBatches(); // Refresh list
+                },
+                onError: (file, error) => {
+                    console.error('Failed:', file.name, error);
+                },
+                onRetry: (file, attempt) => {
+                    console.log('Retrying:', file.name, 'attempt', attempt);
+                }
+            });
+            
+            // Update source when changed
+            sourceSelect.addEventListener('change', () => {
+                if (uploader) {
+                    uploader.config.formData.source_slug = sourceSelect.value;
+                }
+            });
+        }
+        
+        // Load batches
+        async function loadBatches() {
+            try {
+                const response = await fetch(`${API_URL}/import-jobs/?limit=20&ordering=-created_at`);
+                if (response.ok) {
+                    const data = await response.json();
+                    renderBatches(data.results || data);
+                }
+            } catch (e) {
+                console.error('Failed to load batches:', e);
+            }
+        }
+        
+        // Render batches
+        function renderBatches(jobs) {
+            const container = document.getElementById('batches-list');
+            
+            if (jobs.length === 0) {
+                container.innerHTML = '<p style="color: #8b949e; text-align: center; padding: 40px;">Нет загрузок</p>';
+                return;
+            }
+            
+            // Group by batch
+            const batches = {};
+            for (const job of jobs) {
+                const batchId = job.meta?.batch_id || `single-${job.id}`;
+                if (!batches[batchId]) batches[batchId] = [];
+                batches[batchId].push(job);
+            }
+            
+            // Render
+            container.innerHTML = Object.entries(batches).slice(0, 10).map(([batchId, jobs]) => {
+                const total = jobs.reduce((s, j) => s + j.total_messages, 0);
+                const processed = jobs.reduce((s, j) => s + j.processed_messages, 0);
+                const progress = total > 0 ? Math.round((processed / total) * 100) : 0;
+                
+                return `
+                    <div style="background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 16px; margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                            <span style="font-family: monospace; color: #8b949e; font-size: 0.9em;">${batchId.slice(0, 20)}...</span>
+                            <span style="color: ${progress === 100 ? '#3fb950' : '#58a6ff'};">${progress}%</span>
+                        </div>
+                        <div style="height: 6px; background: #30363d; border-radius: 3px; overflow: hidden; margin-bottom: 8px;">
+                            <div style="height: 100%; width: ${progress}%; background: linear-gradient(90deg, #58a6ff, #3fb950); border-radius: 3px;"></div>
+                        </div>
+                        <div style="font-size: 0.85em; color: #8b949e;">
+                            ${jobs.length} files • ${processed.toLocaleString()} / ${total.toLocaleString()} messages
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Init
+        loadSources();
+        initWidget();
+        loadBatches();
+        
+        // Auto refresh
+        setInterval(loadBatches, 5000);
+    </script>
+</body>
+</html>
