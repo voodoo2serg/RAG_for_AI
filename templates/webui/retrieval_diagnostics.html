@@ -1,0 +1,30 @@
+{% extends "webui/layout.html" %}
+{% block content %}
+<h1>Retrieval diagnostics</h1>
+<form method="get">
+  <input type="text" name="q" placeholder="query" value="{{ request.GET.q }}" style="width:60%;">
+  <select name="mode">
+    <option value="business_mode">business_mode</option>
+    <option value="debug_mode">debug_mode</option>
+    <option value="ops_mode">ops_mode</option>
+    <option value="historical_mode">historical_mode</option>
+  </select>
+  <button type="submit">Run</button>
+</form>
+{% if diagnostics %}
+  <p>Results: {{ diagnostics.count }}</p>
+  <table>
+    <tr><th>ID</th><th>Title</th><th>Type</th><th>Score</th><th>Source</th><th>Breakdown</th></tr>
+    {% for r in diagnostics.results %}
+      <tr>
+        <td>{{ r.entry_id }}</td>
+        <td>{{ r.title }}</td>
+        <td>{{ r.entry_type }}</td>
+        <td>{{ r.score }}</td>
+        <td>{{ r.source }}</td>
+        <td><pre>{{ r.breakdown }}</pre></td>
+      </tr>
+    {% endfor %}
+  </table>
+{% endif %}
+{% endblock %}

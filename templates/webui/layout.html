@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="app-shell">
+  <aside class="sidebar">
+  <nav><a href="/">Dashboard</a> | <a href="/review-queue/">Review Queue</a> | <a href="/evaluation-center/">Evaluation</a> | <a href="/retrieval/diagnostics/">Diagnostics</a></nav>
+    <h3>Домены и проекты</h3>
+<p><a href="{% url 'rag_corpus_viewer' %}">RAG Corpus</a></p>
+    <ul class="tree">
+      {% for domain in domains %}
+        <li>
+          <a href="{% url 'domain_detail' domain.id %}"><strong>{{ domain.name }}</strong></a>
+          <ul>
+            {% for project in domain.projects.all %}
+              <li><a href="{% url 'project_detail' project.id %}">{{ project.canonical_name }}</a></li>
+            {% endfor %}
+          </ul>
+        </li>
+      {% endfor %}
+    </ul>
+    <hr>
+    <p><a href="{% url 'message_viewer' %}">Все сообщения</a></p>
+    <p><a href="{% url 'source_list' %}">Источники Telegram</a></p>
+  </aside>
+  <main class="content">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% endblock %}

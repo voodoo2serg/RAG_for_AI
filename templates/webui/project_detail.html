@@ -1,0 +1,26 @@
+{% extends "webui/layout.html" %}
+{% block content %}
+<h1>{{ project.canonical_name }}</h1>
+<p>{{ project.description }}</p>
+<p>Домен: <a href="{% url 'domain_detail' project.domain.id %}">{{ project.domain.name }}</a></p>
+<section>
+  <h2>Wiki</h2>
+  <ul>
+    {% for page in wiki_pages %}
+      <li><a href="{% url 'wiki_page_detail' page.id %}">{{ page.title }}</a></li>
+    {% empty %}
+      <li>Wiki страниц нет</li>
+    {% endfor %}
+  </ul>
+</section>
+<section>
+  <h2>Сообщения проекта</h2>
+  <ul>
+    {% for m in messages %}
+      <li>[{{ m.source.slug }} | {{ m.message_role }}] {{ m.normalized_text|truncatechars:160 }}</li>
+    {% empty %}
+      <li>Сообщений нет</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

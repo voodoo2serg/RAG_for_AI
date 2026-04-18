@@ -1,0 +1,17 @@
+{% extends "webui/layout.html" %}
+{% block content %}
+<h1>RAG Corpus Viewer</h1>
+<table>
+  <tr><th>ID</th><th>Type</th><th>Mode</th><th>Role</th><th>Project</th><th>Text</th></tr>
+  {% for e in entries %}
+    <tr>
+      <td>{{ e.id }}</td>
+      <td>{{ e.entry_type }}</td>
+      <td>{{ e.retrieval_mode }}</td>
+      <td>{{ e.message_role }}</td>
+      <td>{% if e.project %}{{ e.project.canonical_name }}{% endif %}</td>
+      <td>{{ e.text|truncatechars:180 }}</td>
+    </tr>
+  {% endfor %}
+</table>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "webui/layout.html" %}
+{% block content %}
+<h1>{{ source.display_name }}</h1>
+<p>Slug: {{ source.slug }}</p>
+<p>Kind: {{ source.source_kind }}</p>
+<p>Bot username: {{ source.bot_username }}</p>
+<p>Default domain: {% if source.default_domain %}{{ source.default_domain.name }}{% endif %}</p>
+<p>Default project: {% if source.default_project %}{{ source.default_project.canonical_name }}{% endif %}</p>
+<section>
+  <h2>Recent messages</h2>
+  <ul>
+    {% for m in messages %}
+      <li>{{ m.timestamp }} — {{ m.message_role }} — {{ m.normalized_text|truncatechars:160 }}</li>
+    {% empty %}
+      <li>Сообщений нет</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}
+
+<p>Default retrieval mode: {{ source.default_retrieval_mode }}</p>
+<p>Retrieval weight: {{ source.retrieval_weight }}</p>

@@ -1,0 +1,14 @@
+{% extends "webui/layout.html" %}
+{% block content %}
+<h1>Retrieval Session #{{ session.id }}</h1>
+<p><strong>Model:</strong> {{ session.model_name }}</p>
+<p><strong>Latency:</strong> {{ session.latency_ms }} ms</p>
+<h2>Query</h2>
+<pre>{{ session.query_text }}</pre>
+<h2>Diagnostics</h2>
+<pre>{{ session.diagnostics_snapshot }}</pre>
+<h2>Prompt</h2>
+<pre>{{ session.final_prompt_text }}</pre>
+<h2>Output</h2>
+<pre>{{ session.model_output }}</pre>
+{% endblock %}

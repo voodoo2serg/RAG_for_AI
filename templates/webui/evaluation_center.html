@@ -1,0 +1,21 @@
+
+{% extends "webui/layout.html" %}
+{% block content %}
+<h1>Evaluation Center</h1>
+<section>
+  <h2>Recent Runs</h2>
+  <ul>
+    {% for run in runs %}
+      <li>{{ run.name }} — Q={{ run.query_count }} recall@5={{ run.average_recall_at_5 }}</li>
+    {% empty %}<li>No runs yet.</li>{% endfor %}
+  </ul>
+</section>
+<section>
+  <h2>Evaluation Cases</h2>
+  <ul>
+    {% for case in cases %}
+      <li>{{ case.name }} — {{ case.query_text }} {% if case.source %}(source: {{ case.source.slug }}){% endif %}</li>
+    {% empty %}<li>No cases yet.</li>{% endfor %}
+  </ul>
+</section>
+{% endblock %}

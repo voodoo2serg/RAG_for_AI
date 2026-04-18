@@ -1,0 +1,14 @@
+{% extends "webui/layout.html" %}
+{% block content %}
+<h1>Правила для {{ scope_type }} #{{ scope_id }}</h1>
+{% for pack in packs %}
+  <article class="pack">
+    <h2>{{ pack.name }}</h2>
+    <pre>{{ pack.human_readable_text }}</pre>
+    <h3>Rules</h3>
+    <ul>{% for rule in pack.rules.all %}<li><strong>{{ rule.title }}</strong>: {{ rule.body }}</li>{% empty %}<li>Нет правил</li>{% endfor %}</ul>
+    <h3>Guidelines</h3>
+    <ul>{% for item in pack.guidelines.all %}<li>{{ item.title }} — {{ item.body }}</li>{% empty %}<li>Нет рекомендаций</li>{% endfor %}</ul>
+  </article>
+{% endfor %}
+{% endblock %}

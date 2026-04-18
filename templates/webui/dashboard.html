@@ -1,0 +1,15 @@
+{% extends "webui/layout.html" %}
+{% block content %}
+<h1>Telegram Knowledge OS</h1>
+<p>v0.3.1 hardening</p>
+<section>
+  <h2>Источники</h2>
+  <ul>
+    {% for s in sources %}
+      <li><a href="{% url 'source_detail' s.id %}">{{ s.display_name }}</a> — {{ s.source_kind }}</li>
+    {% empty %}
+      <li>Источников пока нет.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

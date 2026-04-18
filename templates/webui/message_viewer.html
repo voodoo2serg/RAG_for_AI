@@ -1,0 +1,18 @@
+{% extends "webui/layout.html" %}
+{% block content %}
+<h1>Сообщения</h1>
+<table class="messages">
+  <thead><tr><th>Source</th><th>Role</th><th>Project</th><th>Time</th><th>Text</th></tr></thead>
+  <tbody>
+  {% for m in messages %}
+    <tr>
+      <td>{{ m.source.slug }}</td>
+      <td>{{ m.message_role }}</td>
+      <td>{% if m.project %}{{ m.project.canonical_name }}{% endif %}</td>
+      <td>{{ m.timestamp }}</td>
+      <td>{{ m.normalized_text|truncatechars:160 }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

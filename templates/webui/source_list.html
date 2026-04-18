@@ -1,0 +1,9 @@
+{% extends "webui/layout.html" %}
+{% block content %}
+<h1>Источники Telegram</h1>
+<ul>
+  {% for s in sources %}
+    <li><a href="{% url 'source_detail' s.id %}">{{ s.display_name }}</a> — {{ s.slug }} — {{ s.source_kind }}</li>
+  {% endfor %}
+</ul>
+{% endblock %}
