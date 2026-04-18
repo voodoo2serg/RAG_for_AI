@@ -130,7 +130,7 @@
         // Load sources
         async function loadSources() {
             try {
-                const response = await fetch(`${API_URL}/telegram-sources/`);
+                const response = await fetch(`${API_URL}/sources/`);
                 if (response.ok) {
                     const sources = await response.json();
                     const select = document.getElementById('source');

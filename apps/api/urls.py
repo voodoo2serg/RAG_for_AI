@@ -5,6 +5,7 @@ from .views import (
     KnowledgeItemViewSet, WikiPageViewSet, RetrievalSessionViewSet,
     OutboundDeliveryLogViewSet, SearchView,
 )
+from apps.chat_events.views import telegram_sources_list
 
 router = DefaultRouter()
 router.register("messages", MessageViewSet)
@@ -19,4 +20,5 @@ router.register("outbound-deliveries", OutboundDeliveryLogViewSet)
 urlpatterns = [
     path("", include(router.urls)),
     path("search/", SearchView.as_view(), name="api_search"),
+    path("telegram-sources/", telegram_sources_list, name="api_telegram_sources"),
 ]

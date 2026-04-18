@@ -5,9 +5,12 @@ from datetime import datetime, timezone
 from django.http import JsonResponse, HttpRequest
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_GET
 from django_ratelimit.decorators import ratelimit
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 from .models import TelegramSource, Message
+from .serializers import TelegramSourceSerializer
 from apps.retrieval.services import label_message_role, choose_retrieval_mode
 from .services import normalize_text, route_message_to_project
 
@@ -80,3 +83,11 @@ def telegram_webhook(request: HttpRequest, source_slug: str):
         logger.debug("Duplicate message source=%s tg_mid=%s", source.slug, tg_mid)
 
     return JsonResponse({"ok": True, "source": source.slug, "message_id": msg.id, "request_id": getattr(request, "request_id", "-")})
+
+
+@api_view(["GET"])
+def telegram_sources_list(request):
+    """List all active Telegram sources for import widget"""
+    sources = TelegramSource.objects.filter(is_active=True).order_by("display_name")
+    serializer = TelegramSourceSerializer(sources, many=True)
+    return Response(serializer.data)
