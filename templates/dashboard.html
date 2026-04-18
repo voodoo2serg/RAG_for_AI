@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Import Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 40px 0;
+            border-bottom: 1px solid #30363d;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            color: #58a6ff;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #8b949e;
+            font-size: 1.1em;
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-4px);
+            border-color: #58a6ff;
+        }
+        
+        .stat-value {
+            font-size: 3em;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .stat-label {
+            color: #8b949e;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .stat-queued { color: #f0883e; }
+        .stat-processing { color: #58a6ff; }
+        .stat-done { color: #3fb950; }
+        .stat-failed { color: #f85149; }
+        
+        /* Upload Section */
+        .upload-section {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .upload-section h2 {
+            margin-bottom: 20px;
+            color: #58a6ff;
+        }
+        
+        .drop-zone {
+            border: 3px dashed #30363d;
+            border-radius: 12px;
+            padding: 60px 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s, background 0.3s;
+        }
+        
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #58a6ff;
+            background: rgba(88, 166, 255, 0.05);
+        }
+        
+        .drop-zone-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .drop-zone-text {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+        
+        .drop-zone-hint {
+            color: #8b949e;
+            font-size: 0.9em;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .source-select {
+            margin-bottom: 20px;
+        }
+        
+        .source-select label {
+            display: block;
+            margin-bottom: 8px;
+            color: #8b949e;
+        }
+        
+        .source-select select {
+            width: 100%;
+            padding: 12px 16px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            color: #c9d1d9;
+            font-size: 1em;
+            cursor: pointer;
+        }
+        
+        /* Batches List */
+        .batches-section {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 30px;
+        }
+        
+        .batches-section h2 {
+            margin-bottom: 20px;
+            color: #58a6ff;
+        }
+        
+        .batch-card {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 16px;
+            transition: border-color 0.2s;
+        }
+        
+        .batch-card:hover {
+            border-color: #58a6ff;
+        }
+        
+        .batch-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .batch-id {
+            font-family: monospace;
+            font-size: 0.9em;
+            color: #8b949e;
+        }
+        
+        .batch-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .status-completed {
+            background: rgba(63, 185, 80, 0.2);
+            color: #3fb950;
+        }
+        
+        .status-processing {
+            background: rgba(88, 166, 255, 0.2);
+            color: #58a6ff;
+        }
+        
+        .status-failed {
+            background: rgba(248, 81, 73, 0.2);
+            color: #f85149;
+        }
+        
+        .batch-progress {
+            margin-bottom: 15px;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: #30363d;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #58a6ff, #3fb950);
+            transition: width 0.5s ease;
+            border-radius: 4px;
+        }
+        
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 0.85em;
+            color: #8b949e;
+        }
+        
+        .batch-files {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .file-tag {
+            background: #21262d;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-family: monospace;
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #8b949e;
+        }
+        
+        .spinner {
+            border: 3px solid #30363d;
+            border-top-color: #58a6ff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #8b949e;
+        }
+        
+        .empty-state-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+        
+        /* Refresh Button */
+        .refresh-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 16px 24px;
+            border-radius: 50px;
+            font-size: 1em;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: background 0.2s, transform 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .refresh-btn:hover {
+            background: #2ea043;
+            transform: scale(1.05);
+        }
+        
+        .refresh-btn:disabled {
+            background: #30363d;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* Error Message */
+        .error-message {
+            background: rgba(248, 81, 73, 0.1);
+            border: 1px solid #f85149;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+            color: #f85149;
+        }
+        
+        /* Success Message */
+        .success-message {
+            background: rgba(63, 185, 80, 0.1);
+            border: 1px solid #3fb950;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+            color: #3fb950;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📥 RAG Import Dashboard</h1>
+            <p class="subtitle">Загрузка и отслеживание Telegram экспортов</p>
+        </header>
+        
+        <!-- Stats -->
+        <div class="stats-grid" id="stats">
+            <div class="stat-card">
+                <div class="stat-value stat-queued" id="stat-queued">0</div>
+                <div class="stat-label">В очереди</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value stat-processing" id="stat-processing">0</div>
+                <div class="stat-label">Обрабатывается</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value stat-done" id="stat-done">0</div>
+                <div class="stat-label">Завершено</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value stat-failed" id="stat-failed">0</div>
+                <div class="stat-label">Ошибок</div>
+            </div>
+        </div>
+        
+        <!-- Upload Section -->
+        <div class="upload-section">
+            <h2>Загрузка файлов</h2>
+            
+            <div class="source-select">
+                <label for="source">Telegram Source:</label>
+                <select id="source">
+                    <option value="">-- Выберите source --</option>
+                    <option value="default">default</option>
+                </select>
+            </div>
+            
+            <div class="drop-zone" id="dropZone">
+                <div class="drop-zone-icon">📁</div>
+                <div class="drop-zone-text">Перетащите JSON файлы сюда</div>
+                <div class="drop-zone-hint">или нажмите для выбора (до 100MB каждый)</div>
+                <input type="file" class="file-input" id="fileInput" multiple accept=".json">
+            </div>
+            
+            <div id="uploadStatus"></div>
+        </div>
+        
+        <!-- Batches Section -->
+        <div class="batches-section">
+            <h2>Активные загрузки</h2>
+            <div id="batchesList">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Загрузка данных...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <button class="refresh-btn" id="refreshBtn" onclick="refreshData()">
+        <span>↻</span>
+        <span>Обновить</span>
+    </button>
+
+    <script>
+        // API URL
+        const API_URL = '/api';
+        
+        // Elements
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const sourceSelect = document.getElementById('source');
+        const uploadStatus = document.getElementById('uploadStatus');
+        const batchesList = document.getElementById('batchesList');
+        const refreshBtn = document.getElementById('refreshBtn');
+        
+        // Load sources
+        async function loadSources() {
+            try {
+                const response = await fetch(`${API_URL}/telegram-sources/`);
+                if (response.ok) {
+                    const sources = await response.json();
+                    sourceSelect.innerHTML = '<option value="">-- Выберите source --</option>' +
+                        sources.map(s => `<option value="${s.slug}">${s.name} (${s.slug})</option>`).join('');
+                }
+            } catch (e) {
+                console.error('Failed to load sources:', e);
+            }
+        }
+        
+        // Drag & Drop handlers
+        dropZone.addEventListener('click', () => fileInput.click());
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+        
+        // Handle file upload
+        async function handleFiles(files) {
+            const source = sourceSelect.value;
+            if (!source) {
+                showStatus('Выберите Telegram source!', 'error');
+                return;
+            }
+            
+            if (files.length === 0) return;
+            
+            const formData = new FormData();
+            formData.append('source_slug', source);
+            for (const file of files) {
+                formData.append('files', file);
+            }
+            
+            showStatus(`Загрузка ${files.length} файлов...`, 'loading');
+            refreshBtn.disabled = true;
+            
+            try {
+                const response = await fetch(`${API_URL}/import-jobs/bulk_upload/`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showStatus(
+                        `✅ Загружено ${result.successful} из ${result.total_files} файлов! ` +
+                        `Batch ID: ${result.batch_id}`,
+                        'success'
+                    );
+                    refreshData();
+                } else {
+                    const error = await response.json();
+                    showStatus(`❌ Ошибка: ${error.error || response.statusText}`, 'error');
+                }
+            } catch (e) {
+                showStatus(`❌ Ошибка сети: ${e.message}`, 'error');
+            } finally {
+                refreshBtn.disabled = false;
+            }
+        }
+        
+        // Show status message
+        function showStatus(message, type) {
+            uploadStatus.innerHTML = `<div class="${type === 'error' ? 'error-message' : type === 'success' ? 'success-message' : 'loading'}">${message}</div>`;
+            if (type !== 'loading') {
+                setTimeout(() => {
+                    uploadStatus.innerHTML = '';
+                }, 5000);
+            }
+        }
+        
+        // Refresh all data
+        async function refreshData() {
+            refreshBtn.disabled = true;
+            
+            try {
+                // Load stats
+                const statsResponse = await fetch(`${API_URL}/import-jobs/queue_status/`);
+                if (statsResponse.ok) {
+                    const stats = await statsResponse.json();
+                    document.getElementById('stat-queued').textContent = stats.queued || 0;
+                    document.getElementById('stat-processing').textContent = stats.processing || 0;
+                    document.getElementById('stat-done').textContent = stats.done || 0;
+                    document.getElementById('stat-failed').textContent = stats.failed || 0;
+                }
+                
+                // Load recent jobs
+                const jobsResponse = await fetch(`${API_URL}/import-jobs/?limit=20&ordering=-created_at`);
+                if (jobsResponse.ok) {
+                    const jobs = await jobsResponse.json();
+                    renderBatches(jobs.results || jobs);
+                }
+            } catch (e) {
+                console.error('Refresh failed:', e);
+                batchesList.innerHTML = `<div class="error-message">Ошибка загрузки данных: ${e.message}</div>`;
+            } finally {
+                refreshBtn.disabled = false;
+            }
+        }
+        
+        // Render batches
+        function renderBatches(jobs) {
+            // Group by batch_id
+            const batches = {};
+            const singleJobs = [];
+            
+            for (const job of jobs) {
+                const batchId = job.meta?.batch_id;
+                if (batchId) {
+                    if (!batches[batchId]) {
+                        batches[batchId] = [];
+                    }
+                    batches[batchId].push(job);
+                } else {
+                    singleJobs.push(job);
+                }
+            }
+            
+            // Add single jobs as pseudo-batches
+            for (const job of singleJobs) {
+                batches[`single-${job.id}`] = [job];
+            }
+            
+            // Render
+            if (Object.keys(batches).length === 0) {
+                batchesList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <p>Нет активных загрузок</p>
+                        <p style="font-size: 0.9em; margin-top: 10px;">Загрузите файлы выше</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const sortedBatches = Object.entries(batches).sort((a, b) => {
+                const aTime = new Date(a[1][0].created_at);
+                const bTime = new Date(b[1][0].created_at);
+                return bTime - aTime; // Newest first
+            });
+            
+            batchesList.innerHTML = sortedBatches.map(([batchId, batchJobs]) => {
+                const total = batchJobs.reduce((sum, j) => sum + (j.total_messages || 0), 0);
+                const processed = batchJobs.reduce((sum, j) => sum + (j.processed_messages || 0), 0);
+                const progress = total > 0 ? Math.round((processed / total) * 100) : 0;
+                
+                const completed = batchJobs.filter(j => j.status === 'done').length;
+                const failed = batchJobs.filter(j => j.status === 'failed').length;
+                const processing = batchJobs.filter(j => 
+                    ['queued', 'pending', 'parsing', 'processing', 'chunking'].includes(j.status)
+                ).length;
+                
+                let statusClass = 'status-processing';
+                let statusText = 'Processing';
+                if (failed === batchJobs.length) {
+                    statusClass = 'status-failed';
+                    statusText = 'Failed';
+                } else if (completed === batchJobs.length) {
+                    statusClass = 'status-completed';
+                    statusText = 'Completed';
+                }
+                
+                return `
+                    <div class="batch-card">
+                        <div class="batch-header">
+                            <span class="batch-id">${batchId.startsWith('single-') ? 'Job #' + batchJobs[0].id : 'Batch: ' + batchId}</span>
+                            <span class="batch-status ${statusClass}">${statusText}</span>
+                        </div>
+                        <div class="batch-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${progress}%"></div>
+                            </div>
+                            <div class="progress-text">
+                                <span>${progress}% (${processed.toLocaleString()} / ${total.toLocaleString()} сообщений)</span>
+                                <span>${completed}/${batchJobs.length} файлов</span>
+                            </div>
+                        </div>
+                        <div class="batch-files">
+                            ${batchJobs.slice(0, 10).map(j => `
+                                <span class="file-tag" title="${j.meta?.filename || 'unknown'} - ${j.status}">
+                                    ${(j.meta?.filename || 'unknown').substring(0, 20)}${(j.meta?.filename || '').length > 20 ? '...' : ''}
+                                </span>
+                            `).join('')}
+                            ${batchJobs.length > 10 ? `<span class="file-tag">+${batchJobs.length - 10} more</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Auto refresh every 5 seconds
+        setInterval(refreshData, 5000);
+        
+        // Initial load
+        loadSources();
+        refreshData();
+    </script>
+</body>
+</html>
