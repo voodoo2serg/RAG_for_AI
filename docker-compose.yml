@@ -2,15 +2,15 @@ services:
   db:
     image: pgvector/pgvector:pg16
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-${DB_NAME:-tkos}}
-      POSTGRES_USER: ${POSTGRES_USER:-${DB_USER:-tkos}}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-${DB_PASSWORD:-tkos}}
+      POSTGRES_DB: ${POSTGRES_DB:-ragdb}
+      POSTGRES_USER: ${POSTGRES_USER:-raguser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ragpass}
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tkos}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-raguser}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -18,7 +18,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -34,8 +34,8 @@ services:
       MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
       MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9002:9000"
+      - "9003:9001"
     volumes:
       - minio_data:/data
     healthcheck:
@@ -49,24 +49,31 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "8001:8000"
     env_file:
       - .env
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.prod
+      DB_HOST: db
+      REDIS_URL: redis://redis:6379/0
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
     volumes:
-      - .:/app
+      - sqlite_data:/app/data
     command: >
-      sh -c "python manage.py migrate &&
-             python manage.py seed_domains &&
-             python manage.py seed_agent_profiles &&
-             python manage.py seed_global_context &&
-             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 120 --reload"
+      sh -c "mkdir -p /app/data && pip install -r requirements/prod.txt --quiet 2>/dev/null &&
+             python manage.py migrate contenttypes --noinput 2>/dev/null || true &&
+             python manage.py migrate auth --noinput 2>/dev/null || true &&
+             python manage.py migrate sessions --noinput 2>/dev/null || true &&
+             python manage.py migrate admin --noinput 2>/dev/null || true &&
+             python manage.py migrate --noinput &&
+             python manage.py seed_domains 2>/dev/null || true &&
+             python manage.py seed_agent_profiles 2>/dev/null || true &&
+             python manage.py seed_global_context 2>/dev/null || true &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 120"
 
   worker:
     build:
@@ -76,14 +83,18 @@ services:
       - .env
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.prod
+      DB_HOST: db
+      REDIS_URL: redis://redis:6379/0
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
     volumes:
-      - .:/app
-    command: celery -A config.celery worker --loglevel=info --concurrency=2
+      - sqlite_data:/app/data
+    command: >
+      sh -c "mkdir -p /app/data && pip install -r requirements/prod.txt --quiet 2>/dev/null &&
+             celery -A config.celery worker --loglevel=info --concurrency=2"
 
   worker-beat:
     build:
@@ -93,14 +104,18 @@ services:
       - .env
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.prod
+      REDIS_URL: redis://redis:6379/0
     depends_on:
       redis:
         condition: service_healthy
     volumes:
-      - .:/app
-    command: celery -A config.celery beat --loglevel=info
+      - sqlite_data:/app/data
+    command: >
+      sh -c "mkdir -p /app/data && pip install -r requirements/prod.txt --quiet 2>/dev/null &&
+             celery -A config.celery beat --loglevel=info"
 
 volumes:
   postgres_data:
   redis_data:
   minio_data:
+  sqlite_data:

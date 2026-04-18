@@ -1,9 +1,9 @@
-
 from django.db import migrations, models
+
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("retrieval", "0003_p1_2_retrieval_quality_hardening" if True else "0001_initial"),
+        ("retrieval", "0003_retrieval_quality_hardening"),
     ]
 
     operations = [
