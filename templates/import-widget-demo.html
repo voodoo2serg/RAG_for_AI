@@ -129,13 +129,19 @@
         
         // Load sources
         async function loadSources() {
+            console.log('Loading sources...');
             try {
                 const response = await fetch(`${API_URL}/telegram-sources/`);
+                console.log('Response status:', response.status);
                 if (response.ok) {
                     const sources = await response.json();
+                    console.log('Sources loaded:', sources);
                     const select = document.getElementById('source');
                     select.innerHTML = '<option value="">-- Выберите source --</option>' +
                         sources.map(s => `<option value="${s.slug}">${s.display_name} (${s.slug})</option>`).join('');
+                    console.log('Select updated with', sources.length, 'sources');
+                } else {
+                    console.error('Failed to load sources:', response.status, response.statusText);
                 }
             } catch (e) {
                 console.error('Failed to load sources:', e);
