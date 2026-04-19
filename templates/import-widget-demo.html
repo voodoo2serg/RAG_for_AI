@@ -165,10 +165,12 @@
             // Initial state
             updateWidgetState();
             
+            // For mobile file selection, explicitly enable multiple
             uploader = new FileUploadWidget({
                 container: '#upload-widget',
                 uploadUrl: `${API_URL}/import-jobs/upload/`,
                 accept: '.json',
+                maxFiles: null,  // Allow unlimited files
                 maxFileSize: 100 * 1024 * 1024, // 100MB
                 parallel: 3,
                 retryAttempts: 3,
@@ -182,11 +184,16 @@
                     console.log(file.name, percent + '%');
                 },
                 onComplete: (files) => {
-                    console.log('All done:', files);
+                    console.log('All uploads complete:', files);
+                    const failed = files.filter(f => f.status === 'error');
+                    if (failed.length > 0) {
+                        console.error('Failed uploads:', failed);
+                    }
                     loadBatches(); // Refresh list
                 },
                 onError: (file, error) => {
-                    console.error('Failed:', file.name, error);
+                    console.error('Upload failed:', file.name, error);
+                    console.error('Error details:', JSON.stringify(error, null, 2));
                 },
                 onRetry: (file, attempt) => {
                     console.log('Retrying:', file.name, 'attempt', attempt);

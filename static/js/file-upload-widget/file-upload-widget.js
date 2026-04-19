@@ -64,7 +64,7 @@ class FileUploadWidget {
                            class="fuw-file-input" 
                            id="${this.getId('input')}"
                            accept="${this.config.accept}"
-                           ${this.config.maxFiles === 1 ? '' : 'multiple'}
+                           multiple
                     >
                 </div>
                 

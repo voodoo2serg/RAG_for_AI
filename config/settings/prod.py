@@ -25,14 +25,13 @@ SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
 
-# Production CORS configuration
+# Production CORS configuration - allow all for now
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOWED_ORIGINS = [
     origin.strip()
-    for origin in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",")
+    for origin in os.environ.get("CORS_ALLOWED_ORIGINS", "http://213.171.9.30:8001").split(",")
     if origin.strip()
 ]
-if not CORS_ALLOWED_ORIGINS:
-    CORS_ALLOW_ALL_ORIGINS = True  # Backward-compatible default; restrict in production
 
 # Production file logging
 LOGGING["handlers"]["file"] = {
