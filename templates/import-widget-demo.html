@@ -130,12 +130,12 @@
         // Load sources
         async function loadSources() {
             try {
-                const response = await fetch(`${API_URL}/sources/`);
+                const response = await fetch(`${API_URL}/telegram-sources/`);
                 if (response.ok) {
                     const sources = await response.json();
                     const select = document.getElementById('source');
                     select.innerHTML = '<option value="">-- Выберите source --</option>' +
-                        sources.map(s => `<option value="${s.slug}">${s.name} (${s.slug})</option>`).join('');
+                        sources.map(s => `<option value="${s.slug}">${s.display_name} (${s.slug})</option>`).join('');
                 }
             } catch (e) {
                 console.error('Failed to load sources:', e);
@@ -145,6 +145,19 @@
         // Initialize widget
         function initWidget() {
             const sourceSelect = document.getElementById('source');
+            const uploadContainer = document.getElementById('upload-widget');
+            
+            // Show message if no source selected
+            function updateWidgetState() {
+                if (!sourceSelect.value) {
+                    uploadContainer.innerHTML = '<p style="color: #8b949e; text-align: center; padding: 40px;">⬆️ Выберите Telegram Source выше, чтобы активировать загрузку файлов</p>';
+                    return false;
+                }
+                return true;
+            }
+            
+            // Initial state
+            updateWidgetState();
             
             uploader = new FileUploadWidget({
                 container: '#upload-widget',
@@ -178,6 +191,11 @@
             sourceSelect.addEventListener('change', () => {
                 if (uploader) {
                     uploader.config.formData.source_slug = sourceSelect.value;
+                }
+                // Re-init widget when source changes
+                if (updateWidgetState()) {
+                    uploadContainer.innerHTML = '';
+                    initWidget();
                 }
             });
         }
