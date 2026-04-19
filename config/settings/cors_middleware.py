@@ -4,7 +4,6 @@ This exempts API endpoints from CSRF checks since they use token auth or are pub
 """
 
 from django.utils.deprecation import MiddlewareMixin
-from django.conf import settings
 
 
 class CsrfExemptApiMiddleware(MiddlewareMixin):
@@ -13,8 +12,8 @@ class CsrfExemptApiMiddleware(MiddlewareMixin):
     API endpoints should use authentication tokens or be explicitly public.
     """
     
-    def process_request(self, request):
+    def process_view(self, request, callback, callback_args, callback_kwargs):
         if request.path.startswith('/api/'):
-            # Mark the request as CSRF exempt
-            request._dont_enforce_csrf_checks = True
+            from django.views.decorators.csrf import csrf_exempt
+            request._csrf_exempt = True
         return None

@@ -38,6 +38,7 @@ class ArchiveImportJobViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['status', 'source_path']
     parser_classes = [JSONParser, MultiPartParser]
+    permission_classes = [AllowAny]  # Allow anonymous access for uploads
 
     def get_serializer_class(self):
         if self.action == 'create':

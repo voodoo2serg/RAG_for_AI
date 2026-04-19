@@ -52,8 +52,8 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
-    "config.settings.cors_middleware.CsrfExemptApiMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "config.settings.cors_middleware.CsrfExemptApiMiddleware",  # Must be before CsrfViewMiddleware
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
