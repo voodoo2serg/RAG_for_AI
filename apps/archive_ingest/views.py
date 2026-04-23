@@ -45,8 +45,7 @@ class ArchiveImportJobViewSet(viewsets.ModelViewSet):
             return ArchiveImportJobCreateSerializer
         return ArchiveImportJobSerializer
 
-    @permission_classes([AllowAny])
-    @action(detail=False, methods=['post'], parser_classes=[MultiPartParser])
+    @action(detail=False, methods=['post'], parser_classes=[MultiPartParser], permission_classes=[AllowAny])
     def upload(self, request):
         """
         Загрузить Telegram JSON файл и создать задачу импорта.
@@ -185,8 +184,7 @@ class ArchiveImportJobViewSet(viewsets.ModelViewSet):
             'task_id': task.id,
         })
 
-    @permission_classes([AllowAny])
-    @action(detail=False, methods=['post'], parser_classes=[MultiPartParser])
+    @action(detail=False, methods=['post'], parser_classes=[MultiPartParser], permission_classes=[AllowAny])
     def bulk_upload(self, request):
         """
         Массовая загрузка нескольких Telegram JSON файлов.

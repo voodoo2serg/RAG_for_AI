@@ -2,6 +2,10 @@ from pathlib import Path
 import os
 import structlog
 from django.core.exceptions import ImproperlyConfigured
+import zoneinfo
+
+# Ensure tzdata is available for zoneinfo
+zoneinfo.available_timezones()
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -109,7 +113,7 @@ CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_ALWAYS_EAGER = os.environ.get("CELERY_TASK_ALWAYS_EAGER", "false").lower() == "true"
 
 LANGUAGE_CODE = "ru-ru"
-TIME_ZONE = "Europe/Moscow"
+TIME_ZONE = "Asia/Shanghai"
 USE_I18N = True
 USE_TZ = True
 

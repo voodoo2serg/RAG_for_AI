@@ -30,7 +30,6 @@ except ImportError:
 CIRCUIT_BREAKER_CONFIG = {
     "fail_max": 5,
     "reset_timeout": 60,
-    "expected_exception": Exception,
 }
 
 
