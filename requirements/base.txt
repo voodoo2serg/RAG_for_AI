@@ -16,3 +16,16 @@ requests>=2.31
 gunicorn>=22.0
 numpy>=1.26
 whitenoise>=6.0
+
+# Resilience & monitoring
+tenacity>=8.0
+pybreaker>=0.8
+django-prometheus>=2.3
+sentry-sdk[django]>=1.40
+
+# API documentation
+drf-spectacular>=0.27
+
+# Testing
+pytest-django>=4.8
+coverage>=7.0

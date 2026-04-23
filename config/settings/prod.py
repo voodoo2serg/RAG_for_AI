@@ -14,24 +14,30 @@ DATABASES = {
     }
 }
 
-# Allow HTTP for local network access
-SECURE_SSL_REDIRECT = False
-SECURE_HSTS_SECONDS = 0
-SECURE_HSTS_INCLUDE_SUBDOMAINS = False
-SECURE_HSTS_PRELOAD = False
-SESSION_COOKIE_SECURE = False
-CSRF_COOKIE_SECURE = False
+# Security: HTTPS enforcement (disable only for local development behind reverse proxy)
+SECURE_SSL_REDIRECT = os.environ.get("DISABLE_SSL_REDIRECT", "").lower() != "true"
+SECURE_HSTS_SECONDS = 31536000 if SECURE_SSL_REDIRECT else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = SECURE_SSL_REDIRECT
+SECURE_HSTS_PRELOAD = SECURE_SSL_REDIRECT
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
 
-# Production CORS configuration - allow all for now
-CORS_ALLOW_ALL_ORIGINS = True
+# Production CORS configuration - strict whitelist
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
     origin.strip()
-    for origin in os.environ.get("CORS_ALLOWED_ORIGINS", "http://213.171.9.30:8001").split(",")
+    for origin in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",")
     if origin.strip()
 ]
+if not CORS_ALLOWED_ORIGINS:
+    # Fallback for backward compatibility - log warning
+    import logging
+    logging.getLogger(__name__).warning(
+        "CORS_ALLOWED_ORIGINS not set in production. API may be inaccessible from browsers."
+    )
 
 # Production file logging
 LOGGING["handlers"]["file"] = {

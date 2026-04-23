@@ -61,3 +61,21 @@ def readiness_check(request):
         return JsonResponse({"ready": False, "reason": "LLM check failed"}, status=503)
 
     return JsonResponse({"ready": True})
+
+
+def llm_health(request):
+    """Detailed LLM provider health status."""
+    try:
+        from apps.llm.client import get_llm_client
+        client = get_llm_client()
+        status = client.get_health_status()
+        
+        if not status["primary_available"] and not status["fallback_available"]:
+            return JsonResponse({"status": "unavailable", "details": status}, status=503)
+        
+        if not status["primary_available"]:
+            return JsonResponse({"status": "degraded", "details": status}, status=200)
+        
+        return JsonResponse({"status": "healthy", "details": status})
+    except Exception as e:
+        return JsonResponse({"status": "error", "reason": str(e)}, status=503)
